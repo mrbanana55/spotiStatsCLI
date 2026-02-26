@@ -2,7 +2,7 @@
 
 **SpotiStats** is a stylish Neofetch-inspired Command Line Interface (CLI) to visualize your Spotify listening habits. Get your top artists and tracks directly in your terminal with a clean, side-by-side layout.
 
-![SpotiStats Preview](https://via.placeholder.com/800x400?text=SpotiStats+CLI+Preview+Placeholder)
+<img width="2800" height="1138" alt="image" src="https://github.com/user-attachments/assets/6dea60a3-b331-4d62-b678-89a2f4eeb166" />
 
 ## 🚀 Features
 
@@ -29,7 +29,7 @@ Before installing, you need a **Spotify Developer Account**.
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/YOUR_USERNAME/spotiStatsCLI.git
+git clone https://github.com/mrbanana55/spotiStatsCLI.git
 cd spotiStatsCLI
 ```
 
@@ -74,11 +74,3 @@ spotiStats --global
 - `spotistats/main.py`: Core logic, authentication, and CLI argument handling.
 - `spotistats/ui.py`: Visual rendering, ASCII art, and layout.
 - `setup.py`: Package installation and entry point definition.
-
-## 🤝 Contributing
-
-Feel free to open issues or submit pull requests to improve the CLI!
-
-## 📄 License
-
-MIT License - See the [LICENSE](LICENSE) file for details.
