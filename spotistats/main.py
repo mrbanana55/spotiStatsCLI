@@ -4,7 +4,7 @@ import os
 import sys
 from pathlib import Path
 import spotipy
-from spotipy.oauth2 import SpotifyOAuth
+from spotipy.oauth2 import SpotifyOAuth, SpotifyOauthError
 from rich.console import Console
 from . import ui
 
@@ -19,6 +19,15 @@ def ensure_config_dir():
     """Ensures the configuration directory exists."""
     if not CONFIG_DIR.exists():
         CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+
+def clear_cache():
+    """Removes the existing .cache file if it exists."""
+    if CACHE_FILE.exists():
+        try:
+            CACHE_FILE.unlink()
+            console.print(f"[green]Cache cleared ({CACHE_FILE}).[/green]")
+        except Exception as e:
+            console.print(f"[yellow]Warning: Could not remove cache file: {e}[/yellow]")
 
 def load_config():
     """Loads configuration from JSON file."""
@@ -42,18 +51,30 @@ def save_config(client_id, client_secret, redirect_uri):
         json.dump(config, f, indent=4)
     console.print(f"[green]Configuration saved to {CONFIG_FILE}[/green]")
 
-def run_setup():
-    """Interactive setup process."""
-    console.print("[bold cyan]SpotiStats Setup[/bold cyan]")
+def run_setup(is_update=False):
+    """Interactive setup/update process."""
+    if is_update:
+        console.print("[bold cyan]SpotiStats Update[/bold cyan]")
+        clear_cache()
+    else:
+        console.print("[bold cyan]SpotiStats Setup[/bold cyan]")
+
     console.print("Please enter your Spotify App credentials.")
     console.print("You can get these from https://developer.spotify.com/dashboard")
 
+    existing_config = load_config() if is_update else None
+    default_redirect = (
+        existing_config.get("redirect_uri", "http://localhost:8888/callback")
+        if existing_config
+        else "http://localhost:8888/callback"
+    )
+
     client_id = console.input("[yellow]Enter Client ID:[/yellow] ").strip()
     client_secret = console.input("[yellow]Enter Client Secret:[/yellow] ").strip()
-    redirect_uri = console.input("[yellow]Enter Redirect URI (default: http://localhost:8888/callback):[/yellow] ").strip()
+    redirect_uri = console.input(f"[yellow]Enter Redirect URI (default: {default_redirect}):[/yellow] ").strip()
 
     if not redirect_uri:
-        redirect_uri = "http://localhost:8888/callback"
+        redirect_uri = default_redirect
 
     if not client_id or not client_secret:
         console.print("[bold red]Error: Client ID and Client Secret are required![/bold red]")
@@ -80,12 +101,18 @@ def main():
     parser = argparse.ArgumentParser(description="SpotiStats: A CLI for your Spotify statistics.")
     parser.add_argument("--global", action="store_true", dest="global_stats", help="Show all-time statistics (default: last month)")
     parser.add_argument("--setup", action="store_true", help="Run initial configuration setup")
+    parser.add_argument("-u", "--update", action="store_true", help="Update credentials, clear cache, and re-authenticate")
 
     args = parser.parse_args()
 
+    # --- UPDATE MODE ---
+    if args.update:
+        run_setup(is_update=True)
+        return
+
     # --- SETUP MODE ---
     if args.setup:
-        run_setup()
+        run_setup(is_update=False)
         return
 
     # --- VALIDATION ---
@@ -111,10 +138,21 @@ def main():
         # --- RENDER UI ---
         ui.display_dashboard(user_data, top_artists, top_tracks, period_label)
 
+    except SpotifyOauthError as e:
+        console.print(f"[bold red]Spotify Auth Error:[/bold red] {e}")
+        if "invalid_grant" in str(e).lower() or "refresh token revoked" in str(e).lower():
+            console.print("\n[yellow]Your Spotify session has expired or the refresh token was revoked.[/yellow]")
+            console.print("Please update your credentials and re-authenticate by running: [bold green]spotiStats --update[/bold green] (or [bold green]spotiStats -u[/bold green])")
     except spotipy.exceptions.SpotifyException as e:
         console.print(f"[bold red]Spotify API Error:[/bold red] {e}")
+        if "invalid_grant" in str(e).lower() or "refresh token revoked" in str(e).lower():
+            console.print("\n[yellow]Your Spotify session has expired or the refresh token was revoked.[/yellow]")
+            console.print("Please update your credentials and re-authenticate by running: [bold green]spotiStats --update[/bold green] (or [bold green]spotiStats -u[/bold green])")
     except Exception as e:
         console.print(f"[bold red]An unexpected error occurred:[/bold red] {e}")
+        if "invalid_grant" in str(e).lower() or "refresh token revoked" in str(e).lower():
+            console.print("\n[yellow]Your Spotify session has expired or the refresh token was revoked.[/yellow]")
+            console.print("Please update your credentials and re-authenticate by running: [bold green]spotiStats --update[/bold green] (or [bold green]spotiStats -u[/bold green])")
 
 if __name__ == "__main__":
     main()

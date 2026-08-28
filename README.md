@@ -67,6 +67,15 @@ To see your **long-term** (several years) statistics:
 spotiStats --global
 ```
 
+### Update Credentials & Refresh Token
+If your Spotify session expires, your refresh token is revoked, or you want to update your API keys:
+```bash
+spotiStats --update
+# or
+spotiStats -u
+```
+This will clear the cached authorization token (`~/.config/spotistats/.cache`) and prompt you to update your credentials in `config.json`.
+
 ---
 
 ## 📂 Project Structure
